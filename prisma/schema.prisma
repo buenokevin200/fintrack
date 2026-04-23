@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MEMBER
+  VIEWER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum BillingCycle {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  creditAccountLinks UserCreditAccount[]
+  subscriptions      Subscription[]
+  subscriptionShares SubscriptionShare[]
+  transactions       Transaction[]
+  sentInvitations    Invitation[]        @relation("SentInvitations")
+}
+
+model CreditAccount {
+  id          String   @id @default(cuid())
+  name        String
+  issuer      String
+  creditLimit Decimal  @db.Decimal(10, 2)
+  closingDay  Int
+  dueDay      Int
+  color       String   @default("#3B82F6")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cards        CreditCard[]
+  transactions Transaction[]
+  owners       UserCreditAccount[]
+  invitations  Invitation[]
+}
+
+model UserCreditAccount {
+  userId    String
+  accountId String
+  role      UserRole @default(VIEWER)
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account CreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accountId])
+}
+
+model CreditCard {
+  id             String  @id @default(cuid())
+  accountId      String
+  lastFourDigits String
+  cardholderName String
+  isPrimary      Boolean @default(false)
+
+  account CreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, lastFourDigits])
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  name               String
+  category           String?
+  amount             Decimal            @db.Decimal(10, 2)
+  currency           String             @default("DOP")
+  billingCycle       BillingCycle       @default(MONTHLY)
+  nextBillingDate    DateTime
+  reminderDaysBefore Int                @default(3)
+  status             SubscriptionStatus @default(ACTIVE)
+  notes              String?
+  userId             String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sharedWith   SubscriptionShare[]
+  transactions Transaction[]
+}
+
+model SubscriptionShare {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  userId         String
+  role           UserRole @default(VIEWER)
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, userId])
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  description     String
+  amount          Decimal         @db.Decimal(10, 2)
+  type            TransactionType @default(EXPENSE)
+  date            DateTime
+  category        String?
+  notes           String?
+  creditAccountId String?
+  subscriptionId  String?
+  userId          String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  creditAccount CreditAccount? @relation(fields: [creditAccountId], references: [id], onDelete: SetNull)
+  subscription  Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  email      String
+  accountId  String
+  invitedBy  String
+  status     String    @default("PENDING")
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  inviter User          @relation("SentInvitations", fields: [invitedBy], references: [id])
+  account CreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
