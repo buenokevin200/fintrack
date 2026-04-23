@@ -2,7 +2,7 @@
 set -e
 
 echo "Running Prisma migrations..."
-npx prisma db push --accept-data-loss
+./node_modules/prisma/build/index.js db push --accept-data-loss --schema=./prisma/schema.prisma
 
 echo "Starting Next.js..."
 exec node server.js
