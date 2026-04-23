@@ -1,20 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: fintrack-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: fintrack
-      POSTGRES_PASSWORD: fintrack_secret
-      POSTGRES_DB: fintrack
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fintrack"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
   app:
     build: .
     container_name: fintrack-app
@@ -23,12 +7,5 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://fintrack:fintrack_secret@postgres:5432/fintrack?schema=public
-      AUTH_SECRET: ${AUTH_SECRET:-cambiar_esta_clave_en_produccion}
-      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-volumes:
-  pgdata:
+    env_file:
+      - .env
