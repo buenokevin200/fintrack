@@ -3,8 +3,8 @@ services:
     build: .
     container_name: fintrack-app
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
     env_file:
