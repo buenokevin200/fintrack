@@ -5,18 +5,20 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
-  CreditCard,
   Repeat,
   ArrowLeftRight,
   Settings,
   LogOut,
+  PiggyBank,
+  Wallet,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/accounts", label: "Tarjetas", icon: CreditCard },
+  { href: "/dashboard/accounts", label: "Cuentas", icon: Wallet },
   { href: "/dashboard/subscriptions", label: "Suscripciones", icon: Repeat },
+  { href: "/dashboard/budgets", label: "Presupuestos", icon: PiggyBank },
   { href: "/dashboard/transactions", label: "Transacciones", icon: ArrowLeftRight },
 ]
 

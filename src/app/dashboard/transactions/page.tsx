@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Plus, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
@@ -67,7 +68,7 @@ export default function TransactionsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Fecha</Label>
-                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+                <DatePicker value={form.date} onChange={(val) => setForm({ ...form, date: val })} required />
               </div>
               <div className="space-y-2">
                 <Label>Categoría</Label>

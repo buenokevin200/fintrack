@@ -16,13 +16,13 @@ export default function AccountsPage() {
   const deleteAccount = api.creditAccount.delete.useMutation({ onSuccess: () => refetch() })
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
-    name: "", issuer: "", creditLimit: 0, closingDay: 1, dueDay: 15, color: "#3B82F6", notes: "",
+    name: "", issuer: "", limitDOP: 0, limitUSD: 0, closingDay: 1, paymentDays: 20, color: "#3B82F6", notes: "",
   })
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     await createAccount.mutateAsync(form)
-    setForm({ name: "", issuer: "", creditLimit: 0, closingDay: 1, dueDay: 15, color: "#3B82F6", notes: "" })
+    setForm({ name: "", issuer: "", limitDOP: 0, limitUSD: 0, closingDay: 1, paymentDays: 20, color: "#3B82F6", notes: "" })
     setShowForm(false)
   }
 
@@ -30,8 +30,8 @@ export default function AccountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tarjetas de crédito</h1>
-          <p className="text-muted-foreground">Administra tus cuentas de crédito</p>
+          <h1 className="text-3xl font-bold tracking-tight">Cuentas</h1>
+          <p className="text-muted-foreground">Administra tus cuentas de crédito y préstamos</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -41,7 +41,7 @@ export default function AccountsPage() {
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle>Nueva cuenta de crédito</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Nueva cuenta</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -53,20 +53,24 @@ export default function AccountsPage() {
                 <Input id="issuer" value={form.issuer} onChange={(e) => setForm({ ...form, issuer: e.target.value })} placeholder="Ej: Banco Popular" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="limit">Límite de crédito</Label>
-                <Input id="limit" type="number" step="0.01" value={form.creditLimit || ""} onChange={(e) => setForm({ ...form, creditLimit: parseFloat(e.target.value) || 0 })} required />
+                <Label htmlFor="limitDOP">Límite (DOP)</Label>
+                <Input id="limitDOP" type="number" step="0.01" value={form.limitDOP || ""} onChange={(e) => setForm({ ...form, limitDOP: parseFloat(e.target.value) || 0 })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
-                <Input id="color" type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                <Label htmlFor="limitUSD">Límite (USD)</Label>
+                <Input id="limitUSD" type="number" step="0.01" value={form.limitUSD || ""} onChange={(e) => setForm({ ...form, limitUSD: parseFloat(e.target.value) || 0 })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="closing">Día de cierre</Label>
                 <Input id="closing" type="number" min={1} max={31} value={form.closingDay} onChange={(e) => setForm({ ...form, closingDay: parseInt(e.target.value) || 1 })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="due">Día de vencimiento</Label>
-                <Input id="due" type="number" min={1} max={31} value={form.dueDay} onChange={(e) => setForm({ ...form, dueDay: parseInt(e.target.value) || 1 })} required />
+                <Label htmlFor="paymentDays">Días para pagar</Label>
+                <Input id="paymentDays" type="number" min={1} max={90} value={form.paymentDays} onChange={(e) => setForm({ ...form, paymentDays: parseInt(e.target.value) || 20 })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <Input id="color" type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="notes">Notas</Label>
@@ -100,10 +104,14 @@ export default function AccountsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-2">{acc.issuer}</p>
-                  <p className="text-2xl font-bold mb-2">{formatCurrency(Number(acc.creditLimit))}</p>
+                  <p className="text-2xl font-bold mb-2">
+                    {Number(acc.limitDOP) > 0 && `${formatCurrency(Number(acc.limitDOP), "DOP")} `}
+                    {Number(acc.limitUSD) > 0 && `${formatCurrency(Number(acc.limitUSD), "USD")}`}
+                    {Number(acc.limitDOP) === 0 && Number(acc.limitUSD) === 0 && "Sin límite"}
+                  </p>
                   <div className="flex gap-4 text-xs text-muted-foreground">
                     <span>Cierre: {acc.closingDay}</span>
-                    <span>Vence: {acc.dueDay}</span>
+                    <span>{acc.paymentDays} días para pagar</span>
                     <span>{acc._count.transactions} transacciones</span>
                   </div>
                   {acc.cards.length > 0 && (

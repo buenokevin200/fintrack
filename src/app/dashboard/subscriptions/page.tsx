@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Plus, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
@@ -105,7 +106,7 @@ export default function SubscriptionsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Próxima facturación</Label>
-                <Input type="date" value={form.nextBillingDate} onChange={(e) => setForm({ ...form, nextBillingDate: e.target.value })} required />
+                <DatePicker value={form.nextBillingDate} onChange={(val) => setForm({ ...form, nextBillingDate: val })} required />
               </div>
               <div className="space-y-2">
                 <Label>Recordar días antes</Label>

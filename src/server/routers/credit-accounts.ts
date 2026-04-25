@@ -9,6 +9,7 @@ export const creditAccountRouter = router({
       },
       include: {
         cards: true,
+        loans: true,
         owners: { include: { user: { select: { id: true, name: true, email: true } } } },
         _count: { select: { transactions: true } },
       },
@@ -23,7 +24,15 @@ export const creditAccountRouter = router({
         where: { id: input, owners: { some: { userId: ctx.user.id } } },
         include: {
           cards: true,
+          loans: true,
           owners: { include: { user: { select: { id: true, name: true, email: true } } } },
+          transactions: {
+            take: 20,
+            orderBy: { date: "desc" },
+            include: {
+              creditAccount: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
       })
     }),
@@ -32,9 +41,10 @@ export const creditAccountRouter = router({
     .input(z.object({
       name: z.string().min(1),
       issuer: z.string().min(1),
-      creditLimit: z.number().positive(),
+      limitDOP: z.number().min(0).default(0),
+      limitUSD: z.number().min(0).default(0),
       closingDay: z.number().int().min(1).max(31),
-      dueDay: z.number().int().min(1).max(31),
+      paymentDays: z.number().int().min(1).max(90).default(20),
       color: z.string().optional(),
       notes: z.string().optional(),
     }))
@@ -54,9 +64,10 @@ export const creditAccountRouter = router({
       id: z.string(),
       name: z.string().min(1).optional(),
       issuer: z.string().min(1).optional(),
-      creditLimit: z.number().positive().optional(),
+      limitDOP: z.number().min(0).optional(),
+      limitUSD: z.number().min(0).optional(),
       closingDay: z.number().int().min(1).max(31).optional(),
-      dueDay: z.number().int().min(1).max(31).optional(),
+      paymentDays: z.number().int().min(1).max(90).optional(),
       color: z.string().optional(),
       notes: z.string().optional(),
     }))
