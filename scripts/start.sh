@@ -2,7 +2,7 @@
 set -e
 
 echo "Running Prisma migrations..."
-npx prisma db push --accept-data-loss
+npx prisma db push
 
 echo "Starting Next.js..."
 exec node server.js
