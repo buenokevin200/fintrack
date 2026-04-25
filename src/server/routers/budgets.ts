@@ -56,6 +56,7 @@ export const budgetRouter = router({
   create: protectedProcedure
     .input(z.object({
       category: z.string().min(1),
+      icon: z.string().optional(),
       amount: z.number().positive(),
       period: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"]).default("MONTHLY"),
       startDate: z.string().datetime({ offset: true }),
@@ -75,6 +76,7 @@ export const budgetRouter = router({
     .input(z.object({
       id: z.string(),
       category: z.string().min(1).optional(),
+      icon: z.string().optional(),
       amount: z.number().positive().optional(),
       period: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"]).optional(),
       notes: z.string().optional(),

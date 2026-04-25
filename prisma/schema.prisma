@@ -30,6 +30,13 @@ enum BillingCycle {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
+}
+
+enum AccountType {
+  CREDIT
+  DEBIT
+  LOAN
 }
 
 model User {
@@ -51,23 +58,26 @@ model User {
 }
 
 model CreditAccount {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   issuer      String
-  limitDOP    Decimal  @default(0) @db.Decimal(12, 2)
-  limitUSD    Decimal  @default(0) @db.Decimal(12, 2)
+  type        AccountType @default(CREDIT)
+  limitDOP    Decimal     @default(0) @db.Decimal(12, 2)
+  limitUSD    Decimal     @default(0) @db.Decimal(12, 2)
+  initialBalance Decimal  @default(0) @db.Decimal(12, 2)
   closingDay  Int
-  paymentDays Int      @default(20)
-  color       String   @default("#3B82F6")
+  paymentDays Int         @default(20)
+  color       String      @default("#3B82F6")
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  cards        CreditCard[]
-  transactions Transaction[]
-  owners       UserCreditAccount[]
-  invitations  Invitation[]
-  loans        Loan[]
+  cards               CreditCard[]
+  transactions        Transaction[]
+  destinationTx       Transaction[]       @relation("DestinationAccount")
+  owners              UserCreditAccount[]
+  invitations         Invitation[]
+  loans               Loan[]
 }
 
 model UserCreditAccount {
@@ -126,22 +136,26 @@ model SubscriptionShare {
 }
 
 model Transaction {
-  id              String          @id @default(cuid())
-  description     String
-  amount          Decimal         @db.Decimal(10, 2)
-  type            TransactionType @default(EXPENSE)
-  date            DateTime
-  category        String?
-  notes           String?
-  creditAccountId String?
-  subscriptionId  String?
-  userId          String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                   String          @id @default(cuid())
+  description          String
+  amount               Decimal         @db.Decimal(12, 2)
+  type                 TransactionType @default(EXPENSE)
+  date                 DateTime
+  category             String?
+  notes                String?
+  currency             String          @default("DOP")
+  creditAccountId      String?
+  destinationAccountId String?
+  transferGroupId      String?
+  subscriptionId       String?
+  userId               String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  creditAccount CreditAccount? @relation(fields: [creditAccountId], references: [id], onDelete: SetNull)
-  subscription  Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditAccount      CreditAccount? @relation(fields: [creditAccountId], references: [id], onDelete: SetNull)
+  destinationAccount CreditAccount? @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: SetNull)
+  subscription       Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Invitation {
@@ -179,6 +193,7 @@ model Loan {
 model Budget {
   id        String       @id @default(cuid())
   category  String
+  icon      String?
   amount    Decimal      @db.Decimal(12, 2)
   period    BillingCycle @default(MONTHLY)
   startDate DateTime
@@ -188,4 +203,26 @@ model Budget {
   updatedAt DateTime     @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Currency {
+  code   String @id
+  name   String
+  symbol String
+
+  ratesFrom ExchangeRate[] @relation("FromCurrency")
+  ratesTo   ExchangeRate[] @relation("ToCurrency")
+}
+
+model ExchangeRate {
+  id            String   @id @default(cuid())
+  fromCurrency  String
+  toCurrency    String
+  rate          Decimal  @db.Decimal(12, 4)
+  updatedAt     DateTime @updatedAt
+
+  from Currency @relation("FromCurrency", fields: [fromCurrency], references: [code])
+  to   Currency @relation("ToCurrency", fields: [toCurrency], references: [code])
+
+  @@unique([fromCurrency, toCurrency])
 }

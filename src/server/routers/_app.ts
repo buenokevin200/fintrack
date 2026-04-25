@@ -6,6 +6,7 @@ import { transactionRouter } from "./transactions"
 import { userRouter } from "./users"
 import { loanRouter } from "./loans"
 import { budgetRouter } from "./budgets"
+import { currencyRouter } from "./currencies"
 
 export const appRouter = router({
   user: userRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   transaction: transactionRouter,
   loan: loanRouter,
   budget: budgetRouter,
+  currency: currencyRouter,
 })
 
 export type AppRouter = typeof appRouter

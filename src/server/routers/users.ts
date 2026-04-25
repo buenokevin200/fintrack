@@ -1,6 +1,7 @@
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import { router, publicProcedure, protectedProcedure } from "@/server/trpc"
+import { sendTelegramMessage } from "@/server/telegram"
 
 export const userRouter = router({
   register: publicProcedure
@@ -64,4 +65,22 @@ export const userRouter = router({
         select: { id: true },
       })
     }),
+
+  sendTelegramTest: protectedProcedure.mutation(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: { telegramChatId: true },
+    })
+    if (!user?.telegramChatId) {
+      throw new Error("No tienes un chat de Telegram vinculado")
+    }
+    const result = await sendTelegramMessage(
+      user.telegramChatId,
+      "✅ <b>FinTrack</b>\n\nMensaje de prueba exitoso. Recibirás notificaciones de:\n• Recordatorios de pago\n• Alertas de presupuesto\n• Resúmenes periódicos"
+    )
+    if (!result?.ok) {
+      throw new Error("Error al enviar el mensaje. Verifica que el bot esté configurado correctamente.")
+    }
+    return { success: true }
+  }),
 })

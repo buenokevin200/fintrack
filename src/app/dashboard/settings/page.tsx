@@ -12,9 +12,17 @@ export default function SettingsPage() {
   const updateProfile = api.user.updateProfile.useMutation({ onSuccess: () => refetch() })
   const updateTelegram = api.user.updateTelegramChatId.useMutation({ onSuccess: () => refetch() })
   const removeTelegram = api.user.removeTelegram.useMutation({ onSuccess: () => refetch() })
+  const sendTelegramTest = api.user.sendTelegramTest.useMutation()
+
+  const { data: currencies, refetch: refetchCurrencies } = api.currency.list.useQuery()
+  const setRate = api.currency.setExchangeRate.useMutation({ onSuccess: () => refetchCurrencies() })
+  const deleteRate = api.currency.deleteExchangeRate.useMutation({ onSuccess: () => refetchCurrencies() })
+  const seedCurrencies = api.currency.seedDefaults.useMutation({ onSuccess: () => refetchCurrencies() })
 
   const [name, setName] = useState(user?.name ?? "")
   const [chatId, setChatId] = useState("")
+  const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle")
+  const [rateForm, setRateForm] = useState({ fromCurrency: "USD", toCurrency: "DOP", rate: 60 })
 
   if (!user) {
     return (
@@ -79,6 +87,27 @@ export default function SettingsPage() {
               <Button variant="destructive" onClick={() => removeTelegram.mutate()}>
                 Desvincular bot
               </Button>
+              <Button
+                variant="outline"
+                disabled={sendTelegramTest.isPending}
+                onClick={async () => {
+                  setTestStatus("idle")
+                  try {
+                    await sendTelegramTest.mutateAsync()
+                    setTestStatus("success")
+                  } catch {
+                    setTestStatus("error")
+                  }
+                }}
+              >
+                {sendTelegramTest.isPending ? "Enviando..." : "Enviar mensaje de prueba"}
+              </Button>
+              {testStatus === "success" && (
+                <p className="text-sm text-green-600">Mensaje enviado correctamente</p>
+              )}
+              {testStatus === "error" && (
+                <p className="text-sm text-red-600">Error al enviar. Verifica el token del bot.</p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -106,6 +135,105 @@ export default function SettingsPage() {
                 <Button type="submit" disabled={updateTelegram.isPending}>Vincular bot</Button>
               </form>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Divisas y tasas de cambio</CardTitle>
+          <CardDescription>
+            Gestiona las divisas disponibles y sus equivalencias. Ej: 1 USD = 60 DOP
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(!currencies || currencies.length === 0) ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">No hay divisas configuradas</p>
+              <Button onClick={() => seedCurrencies.mutate()} disabled={seedCurrencies.isPending}>
+                Crear divisas por defecto (DOP, USD, EUR)
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {currencies.map((c) => (
+                  <div key={c.code} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{c.code} - {c.name}</p>
+                        <p className="text-xs text-muted-foreground">Símbolo: {c.symbol}</p>
+                      </div>
+                      <div className="text-right text-xs text-muted-foreground">
+                        {c.ratesFrom.map((r) => (
+                          <p key={r.id}>
+                            1 {r.fromCurrency} = {Number(r.rate)} {r.toCurrency}
+                            <button
+                              className="ml-2 text-destructive hover:underline"
+                              onClick={() => deleteRate.mutate(r.id)}
+                            >
+                              Eliminar
+                            </button>
+                          </p>
+                        ))}
+                        {c.ratesFrom.length === 0 && (
+                          <p className="text-muted-foreground">Sin tasas</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">Nueva tasa de cambio</p>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    await setRate.mutateAsync(rateForm)
+                    setRateForm({ fromCurrency: "USD", toCurrency: "DOP", rate: 60 })
+                  }}
+                  className="flex items-end gap-3 flex-wrap"
+                >
+                  <div className="space-y-1">
+                    <Label>De</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                      value={rateForm.fromCurrency}
+                      onChange={(e) => setRateForm({ ...rateForm, fromCurrency: e.target.value })}
+                    >
+                      {currencies.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>A</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                      value={rateForm.toCurrency}
+                      onChange={(e) => setRateForm({ ...rateForm, toCurrency: e.target.value })}
+                    >
+                      {currencies.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Tasa</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      className="w-28"
+                      value={rateForm.rate || ""}
+                      onChange={(e) => setRateForm({ ...rateForm, rate: parseFloat(e.target.value) || 0 })}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={setRate.isPending}>Guardar</Button>
+                </form>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
