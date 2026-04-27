@@ -11,6 +11,7 @@ import {
   LogOut,
   PiggyBank,
   Wallet,
+  Brain,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/dashboard/subscriptions", label: "Suscripciones", icon: Repeat },
   { href: "/dashboard/budgets", label: "Presupuestos", icon: PiggyBank },
   { href: "/dashboard/transactions", label: "Transacciones", icon: ArrowLeftRight },
+  { href: "/dashboard/advisor", label: "Asesor Financiero", icon: Brain },
 ]
 
 export default function Sidebar() {

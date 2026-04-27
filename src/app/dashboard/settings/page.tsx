@@ -18,11 +18,15 @@ export default function SettingsPage() {
   const setRate = api.currency.setExchangeRate.useMutation({ onSuccess: () => refetchCurrencies() })
   const deleteRate = api.currency.deleteExchangeRate.useMutation({ onSuccess: () => refetchCurrencies() })
   const seedCurrencies = api.currency.seedDefaults.useMutation({ onSuccess: () => refetchCurrencies() })
+  const updateDeepSeek = api.user.updateDeepSeekConfig.useMutation({ onSuccess: () => refetch() })
+  const removeDeepSeek = api.user.removeDeepSeekConfig.useMutation({ onSuccess: () => refetch() })
 
   const [name, setName] = useState(user?.name ?? "")
   const [chatId, setChatId] = useState("")
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle")
   const [rateForm, setRateForm] = useState({ fromCurrency: "USD", toCurrency: "DOP", rate: 60 })
+  const [apiKeyInput, setApiKeyInput] = useState("")
+  const [modelInput, setModelInput] = useState("deepseek-chat")
 
   if (!user) {
     return (
@@ -234,6 +238,74 @@ export default function SettingsPage() {
                 </form>
               </div>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Inteligencia Artificial</CardTitle>
+          <CardDescription>
+            Configura tu API key de DeepSeek para usar el Asesor Financiero con IA.
+            Obtén tu key en{' '}
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              platform.deepseek.com
+            </a>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {user.deepseekApiKey ? (
+            <div className="space-y-4">
+              <div className="p-3 border rounded-lg bg-green-50 dark:bg-green-950">
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                  DeepSeek configurado
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Modelo: {user.deepseekModel || "deepseek-chat"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  API Key: {user.deepseekApiKey.substring(0, 8)}...
+                </p>
+              </div>
+              <Button variant="destructive" onClick={() => removeDeepSeek.mutate()}>
+                Eliminar configuración
+              </Button>
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                await updateDeepSeek.mutateAsync({ deepseekApiKey: apiKeyInput, deepseekModel: modelInput })
+                setApiKeyInput("")
+              }}
+              className="space-y-4 max-w-md"
+            >
+              <div className="space-y-2">
+                <Label>API Key de DeepSeek</Label>
+                <Input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="sk-..."
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tu API key se guarda encriptada. Nunca la compartiremos.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Modelo</Label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                  value={modelInput}
+                  onChange={(e) => setModelInput(e.target.value)}
+                >
+                  <option value="deepseek-chat">DeepSeek Chat (rápido, ideal para chat)</option>
+                  <option value="deepseek-reasoner">DeepSeek Reasoner (razonamiento profundo)</option>
+                </select>
+              </div>
+              <Button type="submit" disabled={updateDeepSeek.isPending}>Guardar configuración</Button>
+            </form>
           )}
         </CardContent>
       </Card>

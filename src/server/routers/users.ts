@@ -29,7 +29,7 @@ export const userRouter = router({
   me: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
-      select: { id: true, name: true, email: true, createdAt: true, telegramChatId: true },
+      select: { id: true, name: true, email: true, createdAt: true, telegramChatId: true, deepseekApiKey: true, deepseekModel: true },
     })
   }),
 
@@ -83,4 +83,29 @@ export const userRouter = router({
     }
     return { success: true }
   }),
+
+  updateDeepSeekConfig: protectedProcedure
+    .input(z.object({
+      deepseekApiKey: z.string().min(1),
+      deepseekModel: z.string().min(1),
+    }))
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          deepseekApiKey: input.deepseekApiKey,
+          deepseekModel: input.deepseekModel,
+        },
+        select: { id: true, deepseekModel: true },
+      })
+    }),
+
+  removeDeepSeekConfig: protectedProcedure
+    .mutation(({ ctx }) => {
+      return ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { deepseekApiKey: null, deepseekModel: null },
+        select: { id: true },
+      })
+    }),
 })

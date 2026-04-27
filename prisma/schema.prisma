@@ -40,13 +40,15 @@ enum AccountType {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  name           String?
-  email          String   @unique
-  passwordHash   String
-  telegramChatId String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String?
+  email           String   @unique
+  passwordHash    String
+  telegramChatId  String?
+  deepseekApiKey  String?
+  deepseekModel   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   creditAccountLinks UserCreditAccount[]
   subscriptions      Subscription[]

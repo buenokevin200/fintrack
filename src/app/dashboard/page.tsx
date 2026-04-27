@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { api } from "@/lib/trpc-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Wallet, Repeat, PiggyBank, ArrowLeftRight } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 
 const COLORS = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"]
 
@@ -14,6 +15,9 @@ export default function DashboardPage() {
   const { data: subscriptions } = api.subscription.list.useQuery()
   const { data: summary } = api.transaction.getSummary.useQuery({ months: 1 })
   const { data: budgetSummary } = api.budget.getSummary.useQuery({ months: 1 })
+  const { data: dailyExpenses } = api.transaction.getDailyExpenses.useQuery({ days: 7 })
+  const { data: monthlyExpenses } = api.transaction.getMonthlyExpenses.useQuery({ months: 6 })
+  const [chartMode, setChartMode] = useState<"daily" | "monthly">("daily")
 
   const totalDOP = accounts?.reduce((sum, a) => sum + Number(a.limitDOP), 0) ?? 0
   const totalUSD = accounts?.reduce((sum, a) => sum + Number(a.limitUSD), 0) ?? 0
@@ -172,6 +176,64 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Consumo diario</CardTitle>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+              <button
+                onClick={() => setChartMode("daily")}
+                className={`px-3 py-1 text-xs rounded-md transition-colors ${chartMode === "daily" ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}
+              >
+                Por día
+              </button>
+              <button
+                onClick={() => setChartMode("monthly")}
+                className={`px-3 py-1 text-xs rounded-md transition-colors ${chartMode === "monthly" ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}
+              >
+                Por mes
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {chartMode === "daily" && (
+            dailyExpenses && dailyExpenses.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={dailyExpenses.map((d) => ({ ...d, label: new Date(d.date + "T00:00:00").toLocaleDateString("es-DO", { weekday: "short", day: "numeric" }) }))}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value)) as unknown as React.ReactNode} />
+                  <Bar dataKey="amount" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">No hay gastos registrados en los últimos días</p>
+              </div>
+            )
+          )}
+          {chartMode === "monthly" && (
+            monthlyExpenses && monthlyExpenses.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={monthlyExpenses.map((d) => ({ ...d, label: d.month }))}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value)) as unknown as React.ReactNode} />
+                  <Bar dataKey="amount" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">No hay gastos registrados en los últimos meses</p>
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

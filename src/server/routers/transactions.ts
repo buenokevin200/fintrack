@@ -190,4 +190,48 @@ export const transactionRouter = router({
 
       return { totalExpenses, totalIncome, balance: totalIncome - totalExpenses, byCategory }
     }),
+
+  getDailyExpenses: protectedProcedure
+    .input(z.object({ days: z.number().int().positive().default(7) }).optional())
+    .query(async ({ ctx, input }) => {
+      const days: { date: string; amount: number }[] = []
+      for (let i = (input?.days ?? 7) - 1; i >= 0; i--) {
+        const day = new Date()
+        day.setDate(day.getDate() - i)
+        day.setHours(0, 0, 0, 0)
+        const next = new Date(day)
+        next.setDate(next.getDate() + 1)
+        const result = await ctx.prisma.transaction.aggregate({
+          where: { userId: ctx.user.id, type: "EXPENSE", date: { gte: day, lt: next } },
+          _sum: { amount: true },
+        })
+        days.push({
+          date: day.toISOString().split("T")[0],
+          amount: Number(result._sum.amount ?? 0),
+        })
+      }
+      return days
+    }),
+
+  getMonthlyExpenses: protectedProcedure
+    .input(z.object({ months: z.number().int().positive().default(6) }).optional())
+    .query(async ({ ctx, input }) => {
+      const months: { month: string; amount: number }[] = []
+      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+      for (let i = (input?.months ?? 6) - 1; i >= 0; i--) {
+        const start = new Date()
+        start.setMonth(start.getMonth() - i, 1)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
+        const result = await ctx.prisma.transaction.aggregate({
+          where: { userId: ctx.user.id, type: "EXPENSE", date: { gte: start, lt: end } },
+          _sum: { amount: true },
+        })
+        months.push({
+          month: `${monthNames[start.getMonth()]} ${start.getFullYear()}`,
+          amount: Number(result._sum.amount ?? 0),
+        })
+      }
+      return months
+    }),
 })
